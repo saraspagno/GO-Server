@@ -14,24 +14,24 @@ import (
 	"os"
 )
 
-
 func main() {
 	addr, err := net.ResolveTCPAddr("tcp", "localhost:8000")
 	if err != nil {
 		log.Fatal(err)
 	}
 	conn, err := net.DialTCP("tcp", nil, addr)
+	fmt.Fprint(conn, "hello from SARA"+"\n")
 	if err != nil {
 		log.Fatal(err)
 	}
 	done := make(chan struct{})
 	go func() {
 		if _, err := io.Copy(os.Stdout, conn); err != nil {
-			log.Println("go.", err)
+			fmt.Println("go.", err)
 			//log.Fatal(err)
 		}
 		conn.CloseRead()
-		log.Println("See you.")
+		fmt.Println("See you.")
 		done <- struct{}{} // signal the main goroutine
 	}()
 	mustCopy(conn, os.Stdin)
