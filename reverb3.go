@@ -2,10 +2,7 @@
 // Shana Sebban 337912182
 // Sara Spagnoletto 345990808
 
-// Copyright © 2016 Alan A. A. Donovan & Brian W. Kernighan.
-// License: https://creativecommons.org/licenses/by-nc-sa/4.0/
-
-// See page 224.
+//Question 8.4
 
 // TCP echo server.
 package main
@@ -21,32 +18,36 @@ import (
 )
 
 //wait group added in parameters of echo function
-func echo(c net.Conn, shout string, delay time.Duration, wait *sync.WaitGroup) {
+func echo(c net.Conn, shout string, delay time.Duration) {
 	fmt.Fprintln(c, "\t", strings.ToUpper(shout))
 	time.Sleep(delay)
 	fmt.Fprintln(c, "\t", shout)
 	time.Sleep(delay)
 	fmt.Fprintln(c, "\t", strings.ToLower(shout))
-	defer wait.Done() //decrements the waitGroup counter by one: echo action finished so less goroutine
 }
 
 func handleConn(c net.Conn) {
 	//create waitGroup per connection
-	wait := sync.WaitGroup{}
+	var wg sync.WaitGroup
 	input := bufio.NewScanner(c)
 	for input.Scan() {
-		fmt.Println("inside the scan")
-		wait.Add(1)
-		//wait added in parameter of echo function
-		go echo(c, input.Text(), 2*time.Second, &wait)
+		wg.Add(1)
+		//added defer function to close after echo
+		go func() {
+			defer wg.Done()
+			echo(c, input.Text(), 2*time.Second)
+		}()
 	}
 	//wait blocks until the WaitGroup counter is zero
-	wait.Wait()
+	wg.Wait()
 	//number of goroutines is zero
-	log.Println("reverb3. ")
-	// NOTE: ignoring potential errors from input.Err()
-	//close the write half of the TCP connection of netcat4
-	c.Close()
+	log.Println("reverb3.")
+	//closing only the half write
+	if con, ok := c.(*net.TCPConn); ok {
+		con.CloseWrite()
+	} else {
+		c.Close()
+	}
 }
 
 func main() {

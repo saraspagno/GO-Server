@@ -2,10 +2,7 @@
 // Shana Sebban 337912182
 // Sara Spagnoletto 345990808
 
-// Copyright © 2016 Alan A. A. Donovan & Brian W. Kernighan.
-// License: https://creativecommons.org/licenses/by-nc-sa/4.0/
-
-// See page 224.
+// Question 8.8
 
 // TCP echo server.
 package main
@@ -20,7 +17,6 @@ import (
 	"time"
 )
 
-//wait group added in parameters of echo function
 func echo(c net.Conn, shout string, delay time.Duration) {
 	fmt.Fprintln(c, "\t", strings.ToUpper(shout))
 	time.Sleep(delay)
@@ -30,37 +26,40 @@ func echo(c net.Conn, shout string, delay time.Duration) {
 }
 
 func handleConn(c net.Conn) {
+	var wg sync.WaitGroup
 	input := bufio.NewScanner(c)
 	timeout := time.NewTimer(10 * time.Second)
-	text := make(chan string)
+	//making a channel for received text
+	ch := make(chan string)
 
-	var wg sync.WaitGroup
 	go func() {
 		for input.Scan() {
-			text <- input.Text()
+			ch <- input.Text()
 		}
-		close(text)
+		close(ch)
 	}()
 
 	for {
 		select {
-		case t, ok := <-text:
+		case text, ok := <-ch:
 			if ok {
 				wg.Add(1)
+				//resetting the timeout
 				timeout.Reset(10 * time.Second)
 				go func() {
 					defer wg.Done()
-					echo(c, t, 1*time.Second)
+					echo(c, text, 2*time.Second)
 				}()
 			} else {
 				wg.Wait()
 				c.Close()
 				return
 			}
+		// if timeout exceeded
 		case <-timeout.C:
 			timeout.Stop()
 			c.Close()
-			fmt.Println("disconnect silent client")
+			log.Println("reverb4.")
 			return
 		}
 	}

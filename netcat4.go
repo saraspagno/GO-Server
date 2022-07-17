@@ -20,7 +20,6 @@ func main() {
 		log.Fatal(err)
 	}
 	conn, err := net.DialTCP("tcp", nil, addr)
-	fmt.Fprint(conn, "hello from SARA"+"\n")
 	if err != nil {
 		log.Fatal(err)
 	}
